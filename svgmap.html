@@ -4,29 +4,75 @@
     <title>рисуем простую svg карту!</title>
 	<script src = "js/astar-concat.js"></script>
 	<script src = "js/map.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/general.css">
 </head>
 <body>
-Тест
-<?xml version="1.0" standalone="no"?>
-<!--Created with Sketsa SVG Editor (http://www.kiyut.com)-->
-<svg contentScriptType="text/ecmascript" width="600.0px" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full"
-    zoomAndPan="magnify" contentStyleType="text/css" height="600.0px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
-    version="1.0">
-    <polyline fill="none" points="404.0,65.0 100.0,65.0 100.0,508.0 281.0,327.0 281.0,208.0 349.0,208.0 349.0,484.0 
-        447.0,484.0 447.0,65.0 431.0,65.0" stroke="#000000"/>
-    <ellipse rx="22.0" fill="none" ry="27.0" cx="182.0" cy="145.0" stroke="#000000"/>
-    <ellipse rx="31.0" fill="none" ry="16.5" cx="180.0" cy="339.5" stroke="#000000"/>
-    <rect fill="none" x="276.0" width="81.0" height="53.0" y="151.0" stroke="#000000"/>
-    <rect fill="none" x="374.0" width="32.0" height="27.0" y="306.0" stroke="#000000"/>
-    <rect fill="none" x="248.0" width="14.0" height="21.0" y="87.0" stroke="#000000"/>
-    <rect fill="none" x="385.0" width="20.0" height="51.0" y="430.0" stroke="#000000"/>
-    <rect fill="none" x="102.0" width="10.0" height="54.0" y="294.0" stroke="#000000"/>
-    <rect fill="none" x="102.0" width="21.0" height="15.0" y="68.0" stroke="#000000"/>
-    <rect fill="none" x="173.0" width="81.0" height="43.0" y="238.0" stroke="#000000"/>
-</svg>
+<div class = "page">
+	<div class = "title">Карта</div>
+	<table class = "layout">
+		<tr>
+			<td>
+				<div class = "map">
+					<?xml version="1.0" standalone="no"?>
+					<!--Created with Sketsa SVG Editor (http://www.kiyut.com)-->
+					<svg contentScriptType="text/ecmascript" width="600.0px" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full"
+						zoomAndPan="magnify" contentStyleType="text/css" height="600.0px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+						version="1.0">
+						<polyline fill="none" points="404.0,65.0 100.0,65.0 100.0,508.0 281.0,327.0 281.0,208.0 349.0,208.0 349.0,484.0 
+							447.0,484.0 447.0,65.0 431.0,65.0" stroke="#000000"/>
+						<ellipse rx="22.0" fill="none" ry="27.0" cx="182.0" cy="145.0" stroke="#000000"/>
+						<ellipse rx="31.0" fill="none" ry="16.5" cx="180.0" cy="339.5" stroke="#000000"/>
+						<rect fill="none" x="276.0" width="81.0" height="53.0" y="151.0" stroke="#000000"/>
+						<rect fill="none" x="374.0" width="32.0" height="27.0" y="306.0" stroke="#000000"/>
+						<rect fill="none" x="248.0" width="14.0" height="21.0" y="87.0" stroke="#000000"/>
+						<rect fill="none" x="385.0" width="20.0" height="51.0" y="430.0" stroke="#000000"/>
+						<rect fill="none" x="102.0" width="10.0" height="54.0" y="294.0" stroke="#000000"/>
+						<rect fill="none" x="102.0" width="21.0" height="15.0" y="68.0" stroke="#000000"/>
+						<rect fill="none" x="173.0" width="81.0" height="43.0" y="238.0" stroke="#000000"/>
+					</svg>
+				</div>
+			</td>
+			<td>
+				<div class = "settings">
+					<div class = "title">Управление картой</div>
+					<p class="formfield">
+						<label for = "stepGrid" class = "label">Шаг сетки</label>
+						<input type = "range" id = "stepGridRange" min = "5" max = "50" step = "2"/>
+						<input type = "text" id = "stepGridTxt" class = "textbox"/><br/>
+					</p>
+					<input type = "range" /><br/>
+					<input type = "range" /><br/>
+					<input type = "button" value = "Запуск" id = "start"/>
+				</div>
+			</td>
+		</tr>
+	</table>
+</div>
 <script>
 	var map = new Map();
-	map.init();
+
+	startBtn = document.getElementById("start");
+	startBtn.addEventListener("click", onClickStartButton, false);
+		
+	stepGridRange = document.getElementById("stepGridRange");
+	stepGridRange.addEventListener("change", onChangeStepSize, false);
+	stepGridTxt = document.getElementById("stepGridTxt");
+	stepGridRange.value = map.getStepSize();
+	
+	function onChangeStepSize()
+	{
+		map.clearFoundWay();
+		stepGridTxt.value = stepGridRange.value;
+		map.setStepSize(parseInt(stepGridRange.value));
+	}
+	
+	function onClickStartButton()
+	{
+		map.search();
+		stepGridRange.value = map.getStepSize();
+		stepGridTxt.value = map.getStepSize();
+	}
+	
 </script>
 </body>
 </html>

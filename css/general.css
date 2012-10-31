@@ -1,0 +1,44 @@
+.page 
+{
+	background-color: #FAFAFA;
+}
+.page > .title
+{
+	font-size: 2em;
+}
+.title 
+{
+	font-weight: bold;
+	font-size: 1.2em;
+	text-align: center;
+}
+.layout
+{
+	width: 100%;
+}
+.layout td
+{
+	width: 50%;
+	vertical-align: top;
+}
+.settings 
+{
+	padding-top: 100px;
+	text-align: center;
+}
+.settings *
+{
+	margin: 15px 5px;
+}
+.formfield * 
+{
+    vertical-align: middle;
+}
+.textbox
+{
+	width: 40px;
+	height: 20px;
+	padding: 3px;
+	text-align: center;
+	font-size: 1.2em;
+}

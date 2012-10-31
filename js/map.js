@@ -10,16 +10,43 @@
 		WayCells = [],
 		TerrainMap = [],
 		Barriers = [],
+		SvgObjects = [],
+		SearchTimeouts = [],
 		Door = { beginCoord: {}, endCoord: {} },
 		Debug = true,
 		IdRoom = "room";
 		
-	Self.init = function()
+	var clearFoundWay = function()
 	{
+		var i;
+		for (i = 0, i = SvgObjects.length; i > 0; i--)
+		{
+			Svg.removeChild(SvgObjects.pop());
+			
+		};
+		for (i = 0, i = SearchTimeouts.length; i > 0; i--)
+		{
+			clearTimeout(SearchTimeouts.pop());
+		};
+		Door = { beginCoord: {}, endCoord: {} };
+		StartCell = null;
+		Route = [];
+		WayPoints = [];
+		WayCells = [];
+		TerrainMap = [];
+		Barriers = [];
+	}
+	
+	Self.clearFoundWay = clearFoundWay;
+	
+	Self.search = function()
+	{
+		clearFoundWay();
 		fillWayPoints();
 		fillBarriers();
 		fillTerrainMap();	
-	};
+	}
+	
 	Self.Svg = Svg;
 	Self.WayPoints = WayPoints;
 	var test = function()
@@ -182,6 +209,7 @@
 		rect.setAttribute("width", cell.x2 - cell.x);
 		rect.setAttribute("height", cell.y2 - cell.y);
 		Svg.appendChild(rect);	
+		SvgObjects.push(rect);
 		return rect;
 	}
 	
@@ -198,6 +226,7 @@
 		circle.setAttribute("cy", point.yAbs + getStepSize()/2);
 		circle.setAttribute("r", getStepSize()/4);
 		Svg.appendChild(circle);	
+		SvgObjects.push(circle);
 	}	
 	
 	var debugMap = function(cell, isCellInRoom, isCellInBarrier)
@@ -228,7 +257,7 @@
 		{
 			(function (point, i) 
 			{
-				setTimeout(function(){ drawCircle(point) }, i*100);
+				SearchTimeouts.push(setTimeout(function(){ drawCircle(point) }, i*100));
 			}
 			)(arrOfPoints[i], i)
 			
@@ -370,11 +399,21 @@
 	
 	var getStepSize = function()
 	{
-		return 15;
+		if (StepSize) return StepSize;
+		
 		return Door.beginCoord.x === Door.endCoord.x ? 
 			Math.round(Math.abs(Door.beginCoord.y - Door.endCoord.y) * 3/4) : 
 			Math.round(Math.abs(Door.beginCoord.x - Door.endCoord.x) * 3/4)
 	};
+	
+	var setStepSize = function(step)
+	{
+		StepSize = step;
+	};
+	
+	Self.getStepSize = getStepSize;
+	Self.setStepSize = setStepSize;
+	
 	/**
 	 * Нахождение пересечений SVG элементов с точкой по переданным координатам
 	 */	
