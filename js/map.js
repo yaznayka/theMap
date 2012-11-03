@@ -6,6 +6,7 @@
 		StepSize = null,
 		StartCell = null,
 		Route = [],
+		RoomPoints = [],
 		WayPoints = [],
 		WayCells = [],
 		TerrainMap = [],
@@ -14,7 +15,9 @@
 		SearchTimeouts = [],
 		Door = { beginCoord: {}, endCoord: {} },
 		Debug = true,
+		DistanceFromWall = 0,
 		IdRoom = "room";
+		isDiaganalAllow = false;
 		
 	var clearFoundWay = function()
 	{
@@ -34,7 +37,18 @@
 		WayPoints = [];
 		WayCells = [];
 		TerrainMap = [];
+		RoomPoints = [];
 		Barriers = [];
+	}
+	
+	Self.setDistanceFromWall = function(val)
+	{
+		DistanceFromWall = val;
+	}
+	
+	Self.setAllowDiaganal = function(val)
+	{
+		isDiaganalAllow = !!val;
 	}
 	
 	Self.clearFoundWay = clearFoundWay;
@@ -42,7 +56,7 @@
 	Self.search = function()
 	{
 		clearFoundWay();
-		fillWayPoints();
+		fillPoints();
 		fillBarriers();
 		fillTerrainMap();	
 	}
@@ -98,7 +112,7 @@
 			result = true;
 		for (var i = 0; i < points.length; i++)
 		{
-			result &= isPointInPoly(WayPoints, points[i]);
+			result &= isPointInPoly(RoomPoints, points[i]);
 		}
 		return !!result;
 	};	
@@ -138,11 +152,29 @@
 		return false;
 	};
 	
-	var fillWayPoints = function()
+	var fillDoorCoords = function(svgPoints)
+	{
+		//заполняем коордианаты двери,
+		//которые являются начальной и конечной точкой полилинии	
+		var len = RoomObj.points.numberOfItems;
+		
+		Door.beginCoord.x = svgPoints.getItem(0).x;
+		Door.beginCoord.y = svgPoints.getItem(0).y
+		Door.endCoord.x = svgPoints.getItem(len - 1).x;
+		Door.endCoord.y = svgPoints.getItem(len - 1).y		
+	};
+	
+	var getDistanceFromWall = function()
+	{	
+		return DistanceFromWall * getStepSize();	
+	}
+	var fillPoints = function()
 	{	
 		var childsSVG = Svg.childNodes,
-			coord = {},
+			coord, point, diff, dist,
+			previousCoord, nextCoord,
 			elem, i, j, len;
+		
 		for (i in childsSVG)
 		{
 			elem = childsSVG[i];
@@ -153,18 +185,39 @@
 			if (RoomObj)
 			{		
 				RoomObj.setAttribute("id", IdRoom);
-				for (j = 0, len = RoomObj.points.numberOfItems; j < len; j++)
+				for (j = 1, len = RoomObj.points.numberOfItems; j < len - 1; j++)
 				{
-					coord = RoomObj.points.getItem(j);
-					if (j === 0)
+					point = RoomObj.points.getItem(j);
+					RoomPoints.push({ x: point.x, y: point.y });
+				};
+				
+				fillDoorCoords(RoomObj.points);
+				dist = getDistanceFromWall();
+				
+				for (j = 1, len = RoomObj.points.numberOfItems; j < len - 1; j++)
+				{
+					point = RoomObj.points.getItem(j);
+					coord = { x: point.x, y: point.y };
+					previousCoord = RoomObj.points.getItem(j - 1);
+					nextCoord = RoomObj.points.getItem(j + 1);
+					if (coord.x === previousCoord.x)
 					{
-						Door.beginCoord.x = coord.x;
-						Door.beginCoord.y = coord.y
-					} else if (j === len - 1)
+						coord.x = coord.x > nextCoord.x ? coord.x - dist : coord.x + dist;
+						coord.y = coord.y > previousCoord.y ? coord.y - dist : coord.y + dist;
+					} else
 					{
-						Door.endCoord.x = coord.x;
-						Door.endCoord.y = coord.y					
-					} else WayPoints.push({ x: coord.x, y: coord.y });
+						coord.x = coord.x > previousCoord.x ? coord.x - dist : coord.x + dist;
+						coord.y = coord.y > nextCoord.y ? coord.y - dist : coord.y + dist;
+					}
+					//если точка не попала в границы комнаты,
+					//нужно зеркально отразить добавленную дистанцию
+					if (!isPointInPoly(RoomPoints, coord))
+					{
+						diff = Math.abs(point.x - coord.x);
+						coord.x = coord.x < point.x ? point.x + diff : point.x - diff;
+						coord.y = coord.y < point.y ? point.y + diff : point.y - diff;
+					}
+					WayPoints.push({ x: coord.x, y: coord.y });
 				};
 				break;
 			}
@@ -274,7 +327,8 @@
 		{
 			wayPoint = WayPoints[i];
 			
-			diffDist = Math.round(Math.sqrt(Math.pow(cell.x + getStepSize()/2 - wayPoint.x, 2) + Math.pow(cell.y + getStepSize()/2 - wayPoint.y, 2)));
+			diffDist = Math.round(Math.sqrt(Math.pow(cell.x + getStepSize()/2 - wayPoint.x, 2) + 
+				Math.pow(cell.y + getStepSize()/2 - wayPoint.y, 2)));
 			
 			if (diffDist < minDiffDistWayP[i])
 			{
@@ -392,7 +446,7 @@
 		{
 			start = graph.nodes[routeCells[i].pointOfMap.x][routeCells[i].pointOfMap.y];
 			end = graph.nodes[routeCells[i+1].pointOfMap.x][routeCells[i+1].pointOfMap.y];
-			Route = Route.concat(astar.search(graph.nodes, start, end, false));
+			Route = Route.concat(astar.search(graph.nodes, start, end, isDiaganalAllow));
 		}
 		if (Debug) debugShowRoute(Route);
 	}
@@ -402,8 +456,8 @@
 		if (StepSize) return StepSize;
 		
 		return Door.beginCoord.x === Door.endCoord.x ? 
-			Math.round(Math.abs(Door.beginCoord.y - Door.endCoord.y) * 3/4) : 
-			Math.round(Math.abs(Door.beginCoord.x - Door.endCoord.x) * 3/4)
+			Math.round(Math.abs(Door.beginCoord.y - Door.endCoord.y) * 3/5) : 
+			Math.round(Math.abs(Door.beginCoord.x - Door.endCoord.x) * 3/5)
 	};
 	
 	var setStepSize = function(step)

@@ -15,34 +15,42 @@
 				<div class = "map">
 					<?xml version="1.0" standalone="no"?>
 					<!--Created with Sketsa SVG Editor (http://www.kiyut.com)-->
-					<svg contentScriptType="text/ecmascript" width="600.0px" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full"
-						zoomAndPan="magnify" contentStyleType="text/css" height="600.0px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
-						version="1.0">
-						<polyline fill="none" points="404.0,65.0 100.0,65.0 100.0,508.0 281.0,327.0 281.0,208.0 349.0,208.0 349.0,484.0 
-							447.0,484.0 447.0,65.0 431.0,65.0" stroke="#000000"/>
-						<ellipse rx="22.0" fill="none" ry="27.0" cx="182.0" cy="145.0" stroke="#000000"/>
-						<ellipse rx="31.0" fill="none" ry="16.5" cx="180.0" cy="339.5" stroke="#000000"/>
-						<rect fill="none" x="276.0" width="81.0" height="53.0" y="151.0" stroke="#000000"/>
-						<rect fill="none" x="374.0" width="32.0" height="27.0" y="306.0" stroke="#000000"/>
-						<rect fill="none" x="248.0" width="14.0" height="21.0" y="87.0" stroke="#000000"/>
-						<rect fill="none" x="385.0" width="20.0" height="51.0" y="430.0" stroke="#000000"/>
-						<rect fill="none" x="102.0" width="10.0" height="54.0" y="294.0" stroke="#000000"/>
-						<rect fill="none" x="102.0" width="21.0" height="15.0" y="68.0" stroke="#000000"/>
-						<rect fill="none" x="173.0" width="81.0" height="43.0" y="238.0" stroke="#000000"/>
-					</svg>
+<svg contentScriptType="text/ecmascript" width="600.0px" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full"
+    zoomAndPan="magnify" contentStyleType="text/css" height="600.0px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+    version="1.0">
+    <polyline fill="none" points="425.0,219.0 425.0,99.0 132.0,99.0 132.0,483.0 309.6041,483.0 309.6041,297.0 
+        425.0,297.0 425.0,250.0" stroke="#000000"/>
+    <rect fill="none" x="243.0" width="93.0" y="122.0" height="25.0" stroke="#000000"/>
+    <rect fill="none" x="148.0" width="22.0" y="129.0" height="82.0" stroke="#000000"/>
+    <rect fill="none" x="148.0" width="23.0" y="232.0" height="87.0" stroke="#000000"/>
+    <rect fill="none" x="179.0" width="36.0" y="361.0" height="77.0" stroke="#000000"/>
+    <rect fill="none" x="226.0" width="18.0" y="391.0" height="20.0" stroke="#000000"/>
+    <rect fill="none" x="286.0" width="9.0" y="360.0" height="86.0" stroke="#000000"/>
+    <rect fill="none" x="321.0" width="30.0" y="264.0" height="24.0" stroke="#000000"/>
+    <rect fill="none" x="366.0" width="33.0" y="267.0" height="23.0" stroke="#000000"/>
+    <ellipse rx="23.0" fill="none" ry="21.0" cx="295.0" cy="178.0" stroke="#000000"/>
+    <line y2="241.0" fill="none" x1="425.0" x2="448.0" y1="218.0" stroke="#000000"/>
+</svg>
 				</div>
 			</td>
 			<td>
 				<div class = "settings">
 					<div class = "title">Управление картой</div>
 					<p class="formfield">
-						<label for = "stepGrid" class = "label">Шаг сетки</label>
-						<input type = "range" id = "stepGridRange" min = "5" max = "50" step = "2"/>
-						<input type = "text" id = "stepGridTxt" class = "textbox" min = "5" max = "50" disabled="disabled"/><br/>
+						<label for = "stepGridRange" class = "label">Шаг сетки</label>
+						<input type = "range" id = "stepGridRange" min = "8" max = "30" step = "2"/>
+						<input type = "text" id = "stepGridTxt" class = "textbox" disabled="disabled"/><br/>
 					</p>
-					<input type = "range" /><br/>
-					<input type = "range" /><br/>
-					<input type = "button" value = "Запуск" id = "start"/>
+					<p class="formfield">
+						<label for = "distFromWallRng" class = "label">Отступ от стен</label>
+						<input type = "range" id = "distFromWallRange" min = "0" max = "5" step = "1" value = "0"/>
+						<input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/><br/>
+					</p>
+					<p class="formfield">
+						<label for = "isDiaganalAllowedChk" class = "label">Разрешить диаганали</label>
+						<input type = "checkbox" id = "isDiaganalAllowedChk"/>
+					</p>
+					<input type = "button" value = "Очистить карту" id = "clearMap"/>
 				</div>
 			</td>
 		</tr>
@@ -50,23 +58,50 @@
 </div>
 <script>
 	var map = new Map();
+	startSearch();
+	
+	clearMapBtn = document.getElementById("clearMap");
+	clearMapBtn.addEventListener("click", onClickClearMapBtn, false);
 
-	startBtn = document.getElementById("start");
-	startBtn.addEventListener("click", onClickStartButton, false);
-		
+	isDiaganalAllowedChk = document.getElementById("isDiaganalAllowedChk");
+	isDiaganalAllowedChk.addEventListener("change", onChangeDiaganalAllow, false);
+	
+	distFromWallRange = document.getElementById("distFromWallRange");
+	distFromWallRange.addEventListener("change", onChangeDistFromWall, false);
+	distFromWallTxt = document.getElementById("distFromWallTxt");
+	distFromWallTxt.value = "0";
+	
 	stepGridRange = document.getElementById("stepGridRange");
 	stepGridRange.addEventListener("change", onChangeStepSize, false);
 	stepGridTxt = document.getElementById("stepGridTxt");
 	stepGridRange.value = map.getStepSize();
 	
-	function onChangeStepSize()
+	function onChangeDiaganalAllow()
 	{
-		map.clearFoundWay();
-		stepGridTxt.value = stepGridRange.value;
-		map.setStepSize(parseInt(stepGridRange.value));
+		map.setAllowDiaganal(isDiaganalAllowedChk.checked);
+		startSearch();
 	}
 	
-	function onClickStartButton()
+	function onChangeStepSize()
+	{
+		stepGridTxt.value = stepGridRange.value;
+		map.setStepSize(parseInt(stepGridRange.value));
+		startSearch();
+	}
+	
+	function onChangeDistFromWall()
+	{
+		distFromWallTxt.value = distFromWallRange.value;
+		map.setDistanceFromWall(parseInt(distFromWallRange.value));
+		startSearch();
+	}
+	
+	function onClickClearMapBtn()
+	{
+		map.clearFoundWay();
+	}
+	
+	function startSearch()
 	{
 		map.search();
 		stepGridRange.value = map.getStepSize();
