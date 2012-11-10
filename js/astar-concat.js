@@ -51,7 +51,8 @@ function GraphNode(x,y,meta) {
     };
 	this.xAbs = meta.xAbs;
 	this.yAbs = meta.yAbs;
-    this.type = meta.type;
+    this.cell = meta.cell;
+	this.type = meta.type;
 }
 
 GraphNode.prototype.toString = function() {

@@ -42,9 +42,14 @@
 						<input type = "text" id = "stepGridTxt" class = "textbox" disabled="disabled"/><br/>
 					</p>
 					<p class="formfield">
-						<label for = "distFromWallRng" class = "label">Отступ от стен</label>
+						<label for = "distFromWallRange" class = "label">Отступ от стен</label>
 						<input type = "range" id = "distFromWallRange" min = "0" max = "5" step = "1" value = "0"/>
 						<input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/><br/>
+					</p>
+					<p class="formfield">
+						<label for = "distLookingRange" class = "label">Дальность взгляда</label>
+						<input type = "range" id = "distLookingRange" min = "1" max = "10" step = "1" value = "1"/>
+						<input type = "text" id = "distLookingTxt" class = "textbox" disabled="disabled"/><br/>
 					</p>
 					<p class="formfield">
 						<label for = "isDiaganalAllowedChk" class = "label">Разрешить диаганали</label>
@@ -65,6 +70,11 @@
 
 	isDiaganalAllowedChk = document.getElementById("isDiaganalAllowedChk");
 	isDiaganalAllowedChk.addEventListener("change", onChangeDiaganalAllow, false);
+
+	distLookingRange = document.getElementById("distLookingRange");
+	distLookingRange.addEventListener("change", onChangeDistLooking, false);
+	distLookingTxt = document.getElementById("distLookingTxt");
+	distLookingTxt.value = distLookingRange.value;
 	
 	distFromWallRange = document.getElementById("distFromWallRange");
 	distFromWallRange.addEventListener("change", onChangeDistFromWall, false);
@@ -86,6 +96,13 @@
 	{
 		stepGridTxt.value = stepGridRange.value;
 		map.setStepSize(parseInt(stepGridRange.value));
+		startSearch();
+	}
+
+	function onChangeDistLooking()
+	{
+		distLookingTxt.value = distLookingRange.value;
+		map.setDistanceLooking(parseInt(distLookingRange.value));
 		startSearch();
 	}
 	

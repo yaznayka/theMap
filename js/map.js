@@ -16,6 +16,7 @@
 		Door = { beginCoord: {}, endCoord: {} },
 		Debug = true,
 		DistanceFromWall = 0,
+		DistanseLooking = 1,
 		IdRoom = "room";
 		isDiaganalAllow = false;
 		
@@ -46,6 +47,11 @@
 		DistanceFromWall = val;
 	}
 	
+	Self.setDistanceLooking = function(val)
+	{
+		DistanseLooking = val;
+	}
+	
 	Self.setAllowDiaganal = function(val)
 	{
 		isDiaganalAllow = !!val;
@@ -63,40 +69,7 @@
 	
 	Self.Svg = Svg;
 	Self.WayPoints = WayPoints;
-	var test = function()
-	{
-		document.onclick = function(e)
-		{	
-			// var svg = document.getElementsByTagName("svg")[0];
-			// var svgRect = svg.getBoundingClientRect();
-			var scrollLeft = document.documentElement.scrollLeft || document.body.scrollLeft; 
-			var scrollTop = document.documentElement.scrollTop || document.body.scrollTop; 
-			var x = e.pageX - scrollLeft;
-			var y = e.pageY - scrollTop;
-			var test = isPointInPoly(WayPoints, {x: x, y: y});
-			console.debug(test);
-			
-			// var rpos = svg.createSVGRect();
-			// rpos.x = e.pageX - 8;
-			// rpos.y = e.pageY - 8;
-			// rpos.width = 60;
-			// rpos.height = 60;
-			// console.log(svg.getIntersectionList(rpos));
-			
-			// var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-			// rect.setAttribute("id", "myrect"); 
-			// rect.setAttribute("fill","transparent");
-			// rect.setAttribute("fill-opacity", 0.2);
-			// rect.setAttribute("stroke","red");
 
-			// rect.setAttribute("x", x);
-			// rect.setAttribute("y", y);
-			// rect.setAttribute("width", 60);
-			// rect.setAttribute("height", 60);
-			// svg.appendChild(rect);
-		};
-
-	}
 	function isPointInPoly(poly, pt)
 	{
 		for(var c = false, i = -1, l = poly.length, j = l - 1; ++i < l; j = i)
@@ -282,6 +255,60 @@
 		SvgObjects.push(circle);
 	}	
 	
+	var drawArrow = function(cell)
+	{
+		var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+			leftSide = document.createElementNS('http://www.w3.org/2000/svg', 'line'),
+			RightSide = document.createElementNS('http://www.w3.org/2000/svg', 'line'),
+			halfSize = getStepSize()/2,
+			pi = Math.PI,
+			xAng = Math.cos((cell.angle/180)*pi)*halfSize,
+			yAng = Math.sin((cell.angle/180)*pi)*halfSize,
+			x1 = cell.xC - xAng,
+			y1 = cell.yC + yAng,
+			x2 = cell.xC + xAng,
+			y2 = cell.yC - yAng;
+			
+		line.setAttribute("class", "arrow"); 
+		line.setAttribute("stroke","blue");
+		line.setAttribute("stroke-opacity",0.5);			
+		line.setAttribute("stroke-width","2");
+		line.setAttribute("x1", x1);
+		line.setAttribute("x2", x2);
+		line.setAttribute("y1", y1);
+		line.setAttribute("y2", y2);
+
+		// leftSide.setAttribute("class", "arrow"); 
+		// leftSide.setAttribute("stroke","blue");
+		// leftSide.setAttribute("stroke-opacity",0.3);			
+		// leftSide.setAttribute("stroke-width","1");
+		// RightSide.setAttribute("class", "arrow"); 
+		// RightSide.setAttribute("stroke","blue");
+		// RightSide.setAttribute("stroke-opacity",0.3);			
+		// RightSide.setAttribute("stroke-width","2");
+		
+		
+		// leftSide.setAttribute("x1", x2);
+		// leftSide.setAttribute("y1", y2);
+		// RightSide.setAttribute("x1", x2);
+		// RightSide.setAttribute("y1", y2);
+		
+		// if(x1 === x)
+		// leftSide.setAttribute("x2", cell.yC - yAng);
+		// leftSide.setAttribute("y2", cell.y + getStepSize()/2);		
+
+		// RightSide.setAttribute("x2", cell.x);
+
+		// RightSide.setAttribute("y2", cell.y + getStepSize()/2);
+		
+		Svg.appendChild(line);	
+		SvgObjects.push(line);
+		// Svg.appendChild(leftSide);	
+		// Svg.appendChild(RightSide);	
+		// SvgObjects.push(leftSide);
+		// SvgObjects.push(RightSide);
+	}	
+	
 	var debugMap = function(cell, isCellInRoom, isCellInBarrier)
 	{
 		var rect = drawRect(cell);
@@ -308,11 +335,11 @@
 		var i, len1;
 		for (i = 0, len1 = arrOfPoints.length; i < len1; i++)
 		{
-			(function (point, i) 
+			(function (arrOfPoints, point, i) 
 			{
-				SearchTimeouts.push(setTimeout(function(){ drawCircle(point) }, i*100));
+				SearchTimeouts.push(setTimeout(function(){ drawArrow(point.cell) }, i*100));
 			}
-			)(arrOfPoints[i], i)
+			)(arrOfPoints, arrOfPoints[i], i)
 			
 		}
 	}
@@ -403,10 +430,20 @@
 			TerrainMap[x] = [];
 			for (y = 0, yAbs =  roomBox.y, len2 =  roomBox.y + roomBox.height; yAbs < len2; yAbs += StepSize, y++)
 			{
-				pointOfMap = { xAbs: xAbs, yAbs: yAbs, x: x, y: y };
+				cell = { 
+					x: xAbs, 
+					y: yAbs, 
+					x2: xAbs + StepSize, 
+					y2: yAbs + StepSize, 
+					xC: Math.round(xAbs + StepSize/2),
+					yC: Math.round(yAbs + StepSize/2),
+					pointOfMap: pointOfMap
+				};
+				
+				pointOfMap = { xAbs: xAbs, yAbs: yAbs, x: x, y: y, cell: cell };
 				TerrainMap[x][y] = pointOfMap;
 				
-				cell = { x: xAbs, y: yAbs, x2: xAbs + StepSize, y2: yAbs + StepSize, pointOfMap: pointOfMap};
+				cell.pointOfMap = pointOfMap;
 				
 				if (isBoxInRoom(cell)) 
 				{
@@ -439,7 +476,9 @@
 	{
 		var graph = new Graph(TerrainMap),
 			routeCells = [].concat(StartCell, WayCells, StartCell),
-			start, end,
+			start, end, cell, nextCell, 
+			cellMiddle, nextCellMiddle,
+			x, y, angle,
 			i, len1;
 			
 		for (i = 0, len1 = routeCells.length; i < len1 - 1; i++)
@@ -448,7 +487,26 @@
 			end = graph.nodes[routeCells[i+1].pointOfMap.x][routeCells[i+1].pointOfMap.y];
 			Route = Route.concat(astar.search(graph.nodes, start, end, isDiaganalAllow));
 		}
+		for (i = 0, len1 = Route.length; i < len1; i++)
+		{
+			cell = Route[i].cell;
+			//вектор взгляда будет направлен на DistanseLooking шагов вперед
+			//или на последнюю точку
+			nextCell = (Route[DistanseLooking + i] || Route[Route.length - 1]).cell;
+			//найдем угол взгляда относительно оси X, проходящей через центр ячейки
+			x = nextCell.xC - cell.xC;
+			y = cell.yC - nextCell.yC;
+			cell.angle = getAngle(x, y);
+		}
 		if (Debug) debugShowRoute(Route);
+	}
+	
+	var getAngle = function(x, y)
+	{
+		if(x==0) return (y>0) ? 90 : 270; 
+		var a = Math.atan(y/x)*180/Math.PI; 
+		a = (x > 0) ? a+0 : a+180; 
+		return a; 
 	}
 	
 	var getStepSize = function()
