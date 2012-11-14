@@ -17,6 +17,7 @@
 		Debug = true,
 		DistanceFromWall = 0,
 		DistanseLooking = 1,
+		ProcentPathFreq = 5,
 		IdRoom = "room";
 		isDiaganalAllow = false;
 		
@@ -40,6 +41,11 @@
 		TerrainMap = [];
 		RoomPoints = [];
 		Barriers = [];
+	}
+	
+	Self.setPathFreq = function(val)
+	{
+		ProcentPathFreq = val;
 	}
 	
 	Self.setDistanceFromWall = function(val)
@@ -239,7 +245,7 @@
 		return rect;
 	}
 	
-	var drawCircle = function(point)
+	var drawCircle = function(cell, radius)
 	{
 		var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 		circle.setAttribute("class", "testcircle"); 
@@ -248,13 +254,38 @@
 		circle.setAttribute("stroke","blue");
 		circle.setAttribute("stroke-opacity",0.2);			
 		circle.setAttribute("stroke-width","1");
-		circle.setAttribute("cx", point.xAbs + getStepSize()/2);
-		circle.setAttribute("cy", point.yAbs + getStepSize()/2);
-		circle.setAttribute("r", getStepSize()/4);
+		circle.setAttribute("cx", cell.xC);
+		circle.setAttribute("cy", cell.yC);
+		circle.setAttribute("r", radius || getStepSize()/4);
 		Svg.appendChild(circle);	
 		SvgObjects.push(circle);
 	}	
 	
+	var drawPath = function(path)
+	{
+		var svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path'),
+			endPoint = path[path.length - 1].cell,
+			strD = "M" + endPoint.xC + ", " + endPoint.yC,
+			cell,
+			i, len;
+		for (i = 0, len1 = path.length - 1; i < len1; i++)
+			strD += "L" + path[i].cell.xC + ", " + path[i].cell.yC + " ";
+		strD += "Z";
+		
+		svgPath.setAttribute("d", strD); 
+		svgPath.setAttribute("fill", "transparent"); 
+		svgPath.setAttribute("stroke","red");		
+		svgPath.setAttribute("stroke-width","1");
+		Svg.appendChild(svgPath);	
+		SvgObjects.push(svgPath);
+		
+		for (i = 0, len1 = svgPath.getTotalLength(); i < len1; i += (len1 / (len1 * ProcentPathFreq/100)))
+		{
+			cell = {xC: svgPath.getPointAtLength(i).x, yC: svgPath.getPointAtLength(i).y};
+			drawCircle(cell, 3);
+			//break;
+		}
+	}	
 	var drawArrow = function(cell)
 	{
 		var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
@@ -332,12 +363,27 @@
 	
 	var debugShowRoute = function (arrOfPoints)
 	{
-		var i, len1;
-		for (i = 0, len1 = arrOfPoints.length; i < len1; i++)
+		//рисуем получивщуюся траекторию
+		var path = [arrOfPoints[0]],
+			prevCell, cell, i, len1;
+		
+		for (i = 1, len1 = arrOfPoints.length; i < len1; i++)
+		{	
+			cell = arrOfPoints[i].cell;
+			prevCell = path[path.length - 1].cell;
+			if (cell.xC !== prevCell.xC && cell.yC !== prevCell.yC) 
+			{
+				path.push(arrOfPoints[i - 1]);
+			}
+		}
+		path.push(arrOfPoints[arrOfPoints.length - 1]);
+		
+		drawPath(path);
+		for (i = 1, len1 = arrOfPoints.length; i < len1; i++)
 		{
 			(function (arrOfPoints, point, i) 
 			{
-				SearchTimeouts.push(setTimeout(function(){ drawArrow(point.cell) }, i*100));
+		//		SearchTimeouts.push(setTimeout(function(){ drawArrow(point.cell) }, i*100));
 			}
 			)(arrOfPoints, arrOfPoints[i], i)
 			

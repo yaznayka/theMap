@@ -52,6 +52,11 @@
 						<input type = "text" id = "distLookingTxt" class = "textbox" disabled="disabled"/><br/>
 					</p>
 					<p class="formfield">
+						<label for = "pathFreqRange" class = "label">Частота точек в %</label>
+						<input type = "range" id = "pathFreqRange" min = "1" max = "20" step = "1" value = "5"/>
+						<input type = "text" id = "pathFreqTxt" class = "textbox" disabled="disabled"/><br/>
+					</p>					
+					<p class="formfield">
 						<label for = "isDiaganalAllowedChk" class = "label">Разрешить диаганали</label>
 						<input type = "checkbox" id = "isDiaganalAllowedChk"/>
 					</p>
@@ -71,6 +76,11 @@
 	isDiaganalAllowedChk = document.getElementById("isDiaganalAllowedChk");
 	isDiaganalAllowedChk.addEventListener("change", onChangeDiaganalAllow, false);
 
+	pathFreqRange = document.getElementById("pathFreqRange");
+	pathFreqRange.addEventListener("change", onChangePathFreq, false);
+	pathFreqTxt = document.getElementById("pathFreqTxt");
+	pathFreqTxt.value = pathFreqRange.value;
+	
 	distLookingRange = document.getElementById("distLookingRange");
 	distLookingRange.addEventListener("change", onChangeDistLooking, false);
 	distLookingTxt = document.getElementById("distLookingTxt");
@@ -86,9 +96,17 @@
 	stepGridTxt = document.getElementById("stepGridTxt");
 	stepGridRange.value = map.getStepSize();
 	
+
 	function onChangeDiaganalAllow()
 	{
 		map.setAllowDiaganal(isDiaganalAllowedChk.checked);
+		startSearch();
+	}
+	
+	function onChangePathFreq()
+	{
+		pathFreqTxt.value = pathFreqRange.value;
+		map.setPathFreq(parseInt(pathFreqRange.value));
 		startSearch();
 	}
 	
