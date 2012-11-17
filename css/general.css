@@ -16,23 +16,28 @@
 {
 	width: 100%;
 }
-.layout td
+.layout>tr>td
 {
 	width: 50%;
 	vertical-align: top;
 }
-.settings 
+.layout .settings td
 {
-	padding-top: 100px;
+	vertical-align: middle;
+	text-align: right;
+	padding-right: 10px;
+}
+.layout .settings td.checkboxes
+{
 	text-align: center;
+}
+.settings input[type="range"]
+{
+	width: 200px;
 }
 .settings *
 {
 	margin: 15px 5px;
-}
-.formfield * 
-{
-    vertical-align: middle;
 }
 .textbox
 {

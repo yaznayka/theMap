@@ -30,36 +30,61 @@
     <rect fill="none" x="366.0" width="33.0" y="267.0" height="23.0" stroke="#000000"/>
     <ellipse rx="23.0" fill="none" ry="21.0" cx="295.0" cy="178.0" stroke="#000000"/>
     <line y2="241.0" fill="none" x1="425.0" x2="448.0" y1="218.0" stroke="#000000"/>
-</svg>
+</svg> 
+					<!-- <svg contentScriptType="text/ecmascript" width="600.0px" xmlns:xlink="http://www.w3.org/1999/xlink" baseProfile="full"
+						zoomAndPan="magnify" contentStyleType="text/css" height="600.0px" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"
+						version="1.0">
+						<polyline fill="none" points="404.0,65.0 100.0,65.0 100.0,508.0 281.0,327.0 281.0,208.0 349.0,208.0 349.0,484.0 
+							447.0,484.0 447.0,65.0 431.0,65.0" stroke="#000000"/>
+						<ellipse rx="22.0" fill="none" ry="27.0" cx="182.0" cy="145.0" stroke="#000000"/>
+						<ellipse rx="31.0" fill="none" ry="16.5" cx="180.0" cy="339.5" stroke="#000000"/>
+						<rect fill="none" x="276.0" width="81.0" height="53.0" y="151.0" stroke="#000000"/>
+						<rect fill="none" x="374.0" width="32.0" height="27.0" y="306.0" stroke="#000000"/>
+						<rect fill="none" x="248.0" width="14.0" height="21.0" y="87.0" stroke="#000000"/>
+						<rect fill="none" x="385.0" width="20.0" height="51.0" y="430.0" stroke="#000000"/>
+						<rect fill="none" x="102.0" width="10.0" height="54.0" y="294.0" stroke="#000000"/>
+						<rect fill="none" x="102.0" width="21.0" height="15.0" y="68.0" stroke="#000000"/>
+						<rect fill="none" x="173.0" width="81.0" height="43.0" y="238.0" stroke="#000000"/>
+					</svg> -->
 				</div>
 			</td>
 			<td>
 				<div class = "settings">
 					<div class = "title">Управление картой</div>
-					<p class="formfield">
-						<label for = "stepGridRange" class = "label">Шаг сетки</label>
-						<input type = "range" id = "stepGridRange" min = "8" max = "30" step = "2"/>
-						<input type = "text" id = "stepGridTxt" class = "textbox" disabled="disabled"/><br/>
-					</p>
-					<p class="formfield">
-						<label for = "distFromWallRange" class = "label">Отступ от стен</label>
-						<input type = "range" id = "distFromWallRange" min = "0" max = "5" step = "1" value = "0"/>
-						<input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/><br/>
-					</p>
-					<p class="formfield">
-						<label for = "distLookingRange" class = "label">Дальность взгляда</label>
-						<input type = "range" id = "distLookingRange" min = "1" max = "10" step = "1" value = "1"/>
-						<input type = "text" id = "distLookingTxt" class = "textbox" disabled="disabled"/><br/>
-					</p>
-					<p class="formfield">
-						<label for = "pathFreqRange" class = "label">Частота точек в %</label>
-						<input type = "range" id = "pathFreqRange" min = "1" max = "20" step = "1" value = "5"/>
-						<input type = "text" id = "pathFreqTxt" class = "textbox" disabled="disabled"/><br/>
-					</p>					
-					<p class="formfield">
-						<label for = "isDiaganalAllowedChk" class = "label">Разрешить диаганали</label>
-						<input type = "checkbox" id = "isDiaganalAllowedChk"/>
-					</p>
+					<table>
+					<tr>
+						<td>Шаг сетки</td>
+						<td><input type = "range" id = "stepGridRange" min = "8" max = "30" step = "2"/></td>
+						<td><input type = "text" id = "stepGridTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>
+					<tr>
+						<td>Отступ от стен</td>
+						<td><input type = "range" id = "distFromWallRange" min = "0" max = "5" step = "1" value = "0"/></td>
+						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>
+					<tr>
+						<td>Дальность взгляда</td>
+						<td><input type = "range" id = "distLookingRange" min = "1" max = "10" step = "1" value = "1"/></td>
+						<td><input type = "text" id = "distLookingTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>
+					<tr>
+						<td>Частота точек в %</td>
+						<td><input type = "range" id = "pathFreqRange" min = "1" max = "20" step = "1" value = "5"/></td>
+						<td><input type = "text" id = "pathFreqTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>
+					<tr>					
+						<td>Отображать направление взгляда</td>
+						<td class="checkboxes"><input type = "checkbox" id = "isShowLookingChk" checked = "checked"/></td>
+					</tr>					
+					<tr>					
+						<td>Разрешить диаганали</td>
+						<td class="checkboxes"><input type = "checkbox" id = "isDiaganalAllowedChk"/></td>
+					</tr>
+					<tr>					
+						<td>Разрешить скругление</td>
+						<td class="checkboxes"><input type = "checkbox" id = "isRoundedAngleChk"/></td>
+					</tr>					
+					</table>
 					<input type = "button" value = "Очистить карту" id = "clearMap"/>
 				</div>
 			</td>
@@ -73,8 +98,15 @@
 	clearMapBtn = document.getElementById("clearMap");
 	clearMapBtn.addEventListener("click", onClickClearMapBtn, false);
 
+	
+	isShowLookingChk = document.getElementById("isShowLookingChk");
+	isShowLookingChk.addEventListener("change", onChangeShowLooking, false);
+	
 	isDiaganalAllowedChk = document.getElementById("isDiaganalAllowedChk");
 	isDiaganalAllowedChk.addEventListener("change", onChangeDiaganalAllow, false);
+	
+	isRoundedAngledChk = document.getElementById("isRoundedAngleChk");
+	isRoundedAngledChk.addEventListener("change", onChangeRoundedAngle, false);
 
 	pathFreqRange = document.getElementById("pathFreqRange");
 	pathFreqRange.addEventListener("change", onChangePathFreq, false);
@@ -95,7 +127,18 @@
 	stepGridRange.addEventListener("change", onChangeStepSize, false);
 	stepGridTxt = document.getElementById("stepGridTxt");
 	stepGridRange.value = map.getStepSize();
+
+	function onChangeShowLooking()
+	{
+		map.setShowLooking(isShowLookingChk.checked);
+		startSearch();
+	}
 	
+	function onChangeRoundedAngle()
+	{
+		map.setRoundedAngle(isRoundedAngledChk.checked);
+		startSearch();
+	}
 
 	function onChangeDiaganalAllow()
 	{

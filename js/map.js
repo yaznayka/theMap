@@ -13,13 +13,16 @@
 		Barriers = [],
 		SvgObjects = [],
 		SearchTimeouts = [],
+		PointsTo3DWalk = [],
 		Door = { beginCoord: {}, endCoord: {} },
 		Debug = true,
 		DistanceFromWall = 0,
 		DistanseLooking = 1,
 		ProcentPathFreq = 5,
-		IdRoom = "room";
-		isDiaganalAllow = false;
+		IdRoom = "room",
+		isShowLooking = true,
+		isDiaganalAllow = false,
+		isRoundedAngle = false;
 		
 	var clearFoundWay = function()
 	{
@@ -41,11 +44,17 @@
 		TerrainMap = [];
 		RoomPoints = [];
 		Barriers = [];
+		PointsTo3DWalk = [];
 	}
 	
 	Self.setPathFreq = function(val)
 	{
 		ProcentPathFreq = val;
+	}
+	
+	Self.setShowLooking = function(val)
+	{
+		isShowLooking = !!val;
 	}
 	
 	Self.setDistanceFromWall = function(val)
@@ -56,6 +65,11 @@
 	Self.setDistanceLooking = function(val)
 	{
 		DistanseLooking = val;
+	}
+	
+	Self.setRoundedAngle = function(val)
+	{
+		isRoundedAngle = !!val;
 	}
 	
 	Self.setAllowDiaganal = function(val)
@@ -250,9 +264,9 @@
 		var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 		circle.setAttribute("class", "testcircle"); 
 		circle.setAttribute("fill","blue");
-		circle.setAttribute("fill-opacity", 0.4);
+		circle.setAttribute("fill-opacity", 1);
 		circle.setAttribute("stroke","blue");
-		circle.setAttribute("stroke-opacity",0.2);			
+		circle.setAttribute("stroke-opacity",1);			
 		circle.setAttribute("stroke-width","1");
 		circle.setAttribute("cx", cell.xC);
 		circle.setAttribute("cy", cell.yC);
@@ -265,12 +279,48 @@
 	{
 		var svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path'),
 			endPoint = path[path.length - 1].cell,
-			strD = "M" + endPoint.xC + ", " + endPoint.yC,
-			cell,
-			i, len;
-		for (i = 0, len1 = path.length - 1; i < len1; i++)
-			strD += "L" + path[i].cell.xC + ", " + path[i].cell.yC + " ";
-		strD += "Z";
+			strD = "M" + endPoint.xC + ", " + endPoint.yC + " ",
+			stepSize = getStepSize(),
+			point, nextPoint, x, y,
+			pi = Math.PI,
+			cell, middleCell, endCell,
+			step, i, len;
+		if (isRoundedAngle)
+		{
+			for (i = 0, len1 = path.length - 1; i < len1; i++)
+			{
+				cell = path[i].cell;
+				middleCell = path[i + 1] ? path[i + 1].cell : "";
+				endCell = path[i + 2] ? path[i + 2].cell : "";
+				
+				if ((i + 2 <= len1) && cell.xC !== endCell.xC && cell.yC !== endCell.yC)
+				{
+					strD += "L" + cell.xC + ", " + cell.yC + " ";
+					x = cell.xC === middleCell.xC ? cell.xC : 
+						middleCell.xC + stepSize*Math.cos(getAngle(cell.xC - middleCell.xC, 0) * pi/180);
+					y = cell.yC === middleCell.yC ? cell.yC : 
+						middleCell.yC + stepSize*Math.sin(getAngle(0, cell.yC - middleCell.yC) * pi/180);
+					
+					strD += "L" + x + ", " + y + " M" + x + ", " + y + " Q" + middleCell.xC + ", " + middleCell.yC + " ";
+					
+					x = endCell.xC === middleCell.xC ? endCell.xC : 
+						middleCell.xC + stepSize*Math.cos(getAngle(endCell.xC - middleCell.xC, 0) * pi/180);
+					y = endCell.yC === middleCell.yC ? endCell.yC : 
+						middleCell.yC + stepSize*Math.sin(getAngle(0, endCell.yC - middleCell.yC) * pi/180);	
+							
+					strD += x + ", " + y + " ";
+					i += 1;
+				}				
+				else
+					strD += "L" + path[i].cell.xC + ", " + path[i].cell.yC + " ";
+			}
+		}
+		else
+		{
+			for (i = 0, len1 = path.length - 1; i < len1; i++)
+				strD += "L" + path[i].cell.xC + ", " + path[i].cell.yC + " ";
+		}
+		strD += "Z";	
 		
 		svgPath.setAttribute("d", strD); 
 		svgPath.setAttribute("fill", "transparent"); 
@@ -279,65 +329,99 @@
 		Svg.appendChild(svgPath);	
 		SvgObjects.push(svgPath);
 		
-		for (i = 0, len1 = svgPath.getTotalLength(); i < len1; i += (len1 / (len1 * ProcentPathFreq/100)))
+		for (i = 0, len1 = svgPath.getTotalLength(), step = (len1 / (len1 * ProcentPathFreq/100)); i < len1; i += step)
 		{
-			cell = {xC: svgPath.getPointAtLength(i).x, yC: svgPath.getPointAtLength(i).y};
-			drawCircle(cell, 3);
-			//break;
+		
+			point = 
+			{
+				xC: svgPath.getPointAtLength(i).x, 
+				yC: svgPath.getPointAtLength(i).y
+			};
+			PointsTo3DWalk.push(point);
+			drawCircle(point, 1);
+			
+			//вектор взгляда будет направлен на DistanseLooking шагов вперед
+			//или на последнюю точку
+			nextPoint = 
+			{
+				xC: svgPath.getPointAtLength(i + DistanseLooking*step).x, 
+				yC: svgPath.getPointAtLength(i + DistanseLooking*step).y
+			};
+
+			x = nextPoint.xC - point.xC;
+			y = point.yC - nextPoint.yC;
+			point.angle = getAngle(x, y);					
 		}
+		if (isShowLooking) showArrows();
 	}	
-	var drawArrow = function(cell)
+	
+	var showArrows = function()
+	{
+		var i, len1;
+		for (i = 1, len1 = PointsTo3DWalk.length; i < len1; i++)
+		{
+			(function (point) 
+			{
+				SearchTimeouts.push(setTimeout(function(){ drawArrow(point) }, i*100));
+			}
+			)(PointsTo3DWalk[i])
+			
+		}
+	}
+	
+	var drawArrow = function(point)
 	{
 		var line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 			leftSide = document.createElementNS('http://www.w3.org/2000/svg', 'line'),
 			RightSide = document.createElementNS('http://www.w3.org/2000/svg', 'line'),
 			halfSize = getStepSize()/2,
+			color = "yellow",
+			sideAngle = 70,
+			sideLength = halfSize,
 			pi = Math.PI,
-			xAng = Math.cos((cell.angle/180)*pi)*halfSize,
-			yAng = Math.sin((cell.angle/180)*pi)*halfSize,
-			x1 = cell.xC - xAng,
-			y1 = cell.yC + yAng,
-			x2 = cell.xC + xAng,
-			y2 = cell.yC - yAng;
+			leftAngle = pi*(sideAngle + point.angle)/180,
+			rightAngle = pi*(point.angle - sideAngle)/180,
+			xAng = Math.cos((point.angle/180)*pi)*halfSize,
+			yAng = Math.sin((point.angle/180)*pi)*halfSize,
+			x1 = point.xC - xAng,
+			y1 = point.yC + yAng,
+			x2 = point.xC + xAng,
+			y2 = point.yC - yAng;
 			
 		line.setAttribute("class", "arrow"); 
-		line.setAttribute("stroke","blue");
-		line.setAttribute("stroke-opacity",0.5);			
+		line.setAttribute("stroke",color);
+		line.setAttribute("stroke-opacity",1);			
 		line.setAttribute("stroke-width","2");
 		line.setAttribute("x1", x1);
 		line.setAttribute("x2", x2);
 		line.setAttribute("y1", y1);
 		line.setAttribute("y2", y2);
 
-		// leftSide.setAttribute("class", "arrow"); 
-		// leftSide.setAttribute("stroke","blue");
-		// leftSide.setAttribute("stroke-opacity",0.3);			
-		// leftSide.setAttribute("stroke-width","1");
-		// RightSide.setAttribute("class", "arrow"); 
-		// RightSide.setAttribute("stroke","blue");
-		// RightSide.setAttribute("stroke-opacity",0.3);			
-		// RightSide.setAttribute("stroke-width","2");
+		leftSide.setAttribute("class", "arrow"); 
+		leftSide.setAttribute("stroke",color);
+		leftSide.setAttribute("stroke-opacity",1);			
+		leftSide.setAttribute("stroke-width","2");
+		RightSide.setAttribute("class", "arrow"); 
+		RightSide.setAttribute("stroke",color);
+		RightSide.setAttribute("stroke-opacity",1);			
+		RightSide.setAttribute("stroke-width","2");
 		
 		
-		// leftSide.setAttribute("x1", x2);
-		// leftSide.setAttribute("y1", y2);
-		// RightSide.setAttribute("x1", x2);
-		// RightSide.setAttribute("y1", y2);
-		
-		// if(x1 === x)
-		// leftSide.setAttribute("x2", cell.yC - yAng);
-		// leftSide.setAttribute("y2", cell.y + getStepSize()/2);		
-
-		// RightSide.setAttribute("x2", cell.x);
-
-		// RightSide.setAttribute("y2", cell.y + getStepSize()/2);
-		
+		leftSide.setAttribute("x1", x2);
+		leftSide.setAttribute("y1", y2);
+		leftSide.setAttribute("x2", x2 - sideLength*Math.sin(leftAngle));
+		leftSide.setAttribute("y2", y2 - sideLength*Math.cos(leftAngle));	
+		RightSide.setAttribute("x1", x2);
+		RightSide.setAttribute("y1", y2);		
+		RightSide.setAttribute("x2", x2 + sideLength*Math.sin(rightAngle));
+		RightSide.setAttribute("y2", y2 + sideLength*Math.cos(rightAngle));	
+			
 		Svg.appendChild(line);	
 		SvgObjects.push(line);
-		// Svg.appendChild(leftSide);	
-		// Svg.appendChild(RightSide);	
-		// SvgObjects.push(leftSide);
-		// SvgObjects.push(RightSide);
+		Svg.appendChild(leftSide);	
+		Svg.appendChild(RightSide);	
+		SvgObjects.push(leftSide);
+		SvgObjects.push(RightSide);
 	}	
 	
 	var debugMap = function(cell, isCellInRoom, isCellInBarrier)
@@ -361,7 +445,7 @@
 			rect.setAttribute("fill","white");
 	}
 	
-	var debugShowRoute = function (arrOfPoints)
+	var showRoute = function (arrOfPoints)
 	{
 		//рисуем получивщуюся траекторию
 		var path = [arrOfPoints[0]],
@@ -379,15 +463,6 @@
 		path.push(arrOfPoints[arrOfPoints.length - 1]);
 		
 		drawPath(path);
-		for (i = 1, len1 = arrOfPoints.length; i < len1; i++)
-		{
-			(function (arrOfPoints, point, i) 
-			{
-		//		SearchTimeouts.push(setTimeout(function(){ drawArrow(point.cell) }, i*100));
-			}
-			)(arrOfPoints, arrOfPoints[i], i)
-			
-		}
 	}
 	
 	var fillWayCells = function (cell, minDiffDistWayP) 
@@ -536,15 +611,8 @@
 		for (i = 0, len1 = Route.length; i < len1; i++)
 		{
 			cell = Route[i].cell;
-			//вектор взгляда будет направлен на DistanseLooking шагов вперед
-			//или на последнюю точку
-			nextCell = (Route[DistanseLooking + i] || Route[Route.length - 1]).cell;
-			//найдем угол взгляда относительно оси X, проходящей через центр ячейки
-			x = nextCell.xC - cell.xC;
-			y = cell.yC - nextCell.yC;
-			cell.angle = getAngle(x, y);
 		}
-		if (Debug) debugShowRoute(Route);
+		showRoute(Route);
 	}
 	
 	var getAngle = function(x, y)
