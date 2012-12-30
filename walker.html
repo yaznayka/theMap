@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebGL. Work hard...</title>
+	<script src = "js/lib/three.js"></script>
+	<script src = "js/lib/OBJLoader.js"></script>	
+	<script src = "js/lib/TrackballControls.js"></script>
+	<script src = "js/lib/FirstPersonControls.js"></script>	
+	<script src = "js/walker.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/general.css">
+</head>
+<body>
+
+</div>
+
+<div class = "page">
+	<div class = "title">Карта</div>
+	<table class = "layout">
+		<tr>
+			<td>
+				<div id = "webgl">
+			</td>
+			<td>
+				<div class = "settings">
+					<div class = "title">Управление картой</div>
+					<table>
+					<tr>
+						<td>Список объектов</td>
+						<td><select id = "listObjects" style = "width:100%"></select></td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>Ось X</td>
+						<td><input type = "range" id = "xAxis" min = "-200" max = "200" step = "5" value = "0"/></td>
+						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>		
+					<tr>
+						<td>Ось Y</td>
+						<td><input type = "range" id = "yAxis" min = "-200" max = "200" step = "5" value = "0"/></td>
+						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>		
+					<tr>
+						<td>Ось Z</td>
+						<td><input type = "range" id = "zAxis" min = "-200" max = "200" step = "5" value = "0"/></td>
+						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>														
+					</table>
+				</div>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<script>
+	var settings = 
+	{
+		ContainerID: "webgl",
+		ListObjectsID: "listObjects",
+		ObjPath: "obj/house2.obj",
+		ShowAxis: true,
+	}
+	var w = walker = new Walker(settings)
+	walker.init();
+
+	listObjects = document.getElementById("listObjects");
+	listObjects.addEventListener("change", onListChange, false);
+
+	xAxis = document.getElementById("xAxis");
+	xAxis.addEventListener("change", onMoveObject, false);
+
+	yAxis = document.getElementById("yAxis");
+	yAxis.addEventListener("change", onMoveObject, false);
+
+	zAxis = document.getElementById("zAxis");
+	zAxis.addEventListener("change", onMoveObject, false);
+
+	function onListChange()
+	{ 
+		var pos = w.getPosition(listObjects.value);
+		xAxis.value = pos.x;
+		yAxis.value = pos.y;
+		zAxis.value = pos.z;
+	};
+
+	function onMoveObject()
+	{ 
+		w.moveObject(listObjects.value, xAxis.value, yAxis.value, zAxis.value);
+	};
+
+</script>
+</body>
+</html>

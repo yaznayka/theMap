@@ -275,6 +275,27 @@
 		SvgObjects.push(circle);
 	}	
 	
+	var makeRoundAngle = function(fPoint, sPoint, isRoundGrow)
+	{
+		var strD ="", middlePoint = {};
+		middlePoint.
+		x = cell.xC === middleCell.xC ? cell.xC : 
+			middleCell.xC + stepSize*Math.cos(getAngle(cell.xC - middleCell.xC, 0) * pi/180);
+		y = cell.yC === middleCell.yC ? cell.yC : 
+			middleCell.yC + stepSize*Math.sin(getAngle(0, cell.yC - middleCell.yC) * pi/180);
+		
+		strD += "M" + fPoint.x + "," + fPoint.y + " Q" + middleCell.xC + "," + middleCell.yC + " ";
+		
+		x = endCell.xC === middleCell.xC ? endCell.xC : 
+			middleCell.xC + stepSize*Math.cos(getAngle(endCell.xC - middleCell.xC, 0) * pi/180);
+		y = endCell.yC === middleCell.yC ? endCell.yC : 
+			middleCell.yC + stepSize*Math.sin(getAngle(0, endCell.yC - middleCell.yC) * pi/180);	
+				
+		strD += x + "," + y + " ";
+		
+		return strD;
+	};
+	
 	var drawPath = function(path)
 	{
 		var svgPath = document.createElementNS('http://www.w3.org/2000/svg', 'path'),
@@ -295,32 +316,21 @@
 				
 				if ((i + 2 <= len1) && cell.xC !== endCell.xC && cell.yC !== endCell.yC)
 				{
-					strD += "L" + cell.xC + ", " + cell.yC + " ";
-					x = cell.xC === middleCell.xC ? cell.xC : 
-						middleCell.xC + stepSize*Math.cos(getAngle(cell.xC - middleCell.xC, 0) * pi/180);
-					y = cell.yC === middleCell.yC ? cell.yC : 
-						middleCell.yC + stepSize*Math.sin(getAngle(0, cell.yC - middleCell.yC) * pi/180);
-					
-					strD += "L" + x + ", " + y + " M" + x + ", " + y + " Q" + middleCell.xC + ", " + middleCell.yC + " ";
-					
-					x = endCell.xC === middleCell.xC ? endCell.xC : 
-						middleCell.xC + stepSize*Math.cos(getAngle(endCell.xC - middleCell.xC, 0) * pi/180);
-					y = endCell.yC === middleCell.yC ? endCell.yC : 
-						middleCell.yC + stepSize*Math.sin(getAngle(0, endCell.yC - middleCell.yC) * pi/180);	
-							
-					strD += x + ", " + y + " ";
-					i += 1;
+
+
+
 				}				
 				else
-					strD += "L" + path[i].cell.xC + ", " + path[i].cell.yC + " ";
+					strD += "L" + path[i].cell.xC + "," + path[i].cell.yC + " ";
 			}
+			strD += "L" + path[path.length - 1].cell.xC + "," + path[path.length - 1].cell.yC + " Z";
 		}
 		else
 		{
 			for (i = 0, len1 = path.length - 1; i < len1; i++)
-				strD += "L" + path[i].cell.xC + ", " + path[i].cell.yC + " ";
+				strD += "L" + path[i].cell.xC + "," + path[i].cell.yC + " ";
+			strD += "Z";		
 		}
-		strD += "Z";	
 		
 		svgPath.setAttribute("d", strD); 
 		svgPath.setAttribute("fill", "transparent"); 
