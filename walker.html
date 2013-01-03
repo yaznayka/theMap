@@ -5,8 +5,9 @@
 	<script src = "js/lib/three.js"></script>
 	<script src = "js/lib/OBJLoader.js"></script>	
 	<script src = "js/lib/TrackballControls.js"></script>
-	<script src = "js/lib/FirstPersonControls.js"></script>	
+	<script src = "js/astar-concat.js"></script>	
 	<script src = "js/walker.js"></script>
+	<script src = "js/map.js"></script>	
 	<link rel="stylesheet" type="text/css" href="css/general.css">
 </head>
 <body>
@@ -14,7 +15,7 @@
 </div>
 
 <div class = "page">
-	<div class = "title">Карта</div>
+	<div class = "title">WebGl</div>
 	<table class = "layout">
 		<tr>
 			<td>
@@ -22,28 +23,33 @@
 			</td>
 			<td>
 				<div class = "settings">
-					<div class = "title">Управление картой</div>
+					<div class = "title"></div>
 					<table>
 					<tr>
-						<td>Список объектов</td>
+						<td>List Objects</td>
 						<td><select id = "listObjects" style = "width:100%"></select></td>
 						<td></td>
 					</tr>
 					<tr>
-						<td>Ось X</td>
+						<td>Axis X</td>
 						<td><input type = "range" id = "xAxis" min = "-200" max = "200" step = "5" value = "0"/></td>
-						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
+						<td><input type = "text" id = "xAxisTxt" class = "textbox" disabled="disabled"/></td>
 					</tr>		
 					<tr>
-						<td>Ось Y</td>
+						<td>Axis Y</td>
 						<td><input type = "range" id = "yAxis" min = "-200" max = "200" step = "5" value = "0"/></td>
-						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
+						<td><input type = "text" id = "yAxisTxt" class = "textbox" disabled="disabled"/></td>
 					</tr>		
 					<tr>
-						<td>Ось Z</td>
+						<td>Axis Z</td>
 						<td><input type = "range" id = "zAxis" min = "-200" max = "200" step = "5" value = "0"/></td>
-						<td><input type = "text" id = "distFromWallTxt" class = "textbox" disabled="disabled"/></td>
-					</tr>														
+						<td><input type = "text" id = "zAxisTxt" class = "textbox" disabled="disabled"/></td>
+					</tr>			
+					<!--<tr>
+						<td>Fly around?</td>
+						<td class = "checkboxes"><input type = "checkbox" id = "flyAround" checked = "checked"/></td>
+						<td></td>
+					</tr>	!-->																
 					</table>
 				</div>
 			</td>
@@ -58,21 +64,32 @@
 		ListObjectsID: "listObjects",
 		ObjPath: "obj/house2.obj",
 		ShowAxis: true,
-	}
+		MapsSettings: [ { SvgPath: "svg/map1.svg" }]
+	};
+
 	var w = walker = new Walker(settings)
 	walker.init();
+
 
 	listObjects = document.getElementById("listObjects");
 	listObjects.addEventListener("change", onListChange, false);
 
 	xAxis = document.getElementById("xAxis");
+	xAxisTxt = document.getElementById("xAxisTxt");
 	xAxis.addEventListener("change", onMoveObject, false);
 
 	yAxis = document.getElementById("yAxis");
+	yAxisTxt = document.getElementById("yAxisTxt");
 	yAxis.addEventListener("change", onMoveObject, false);
 
 	zAxis = document.getElementById("zAxis");
+	zAxisTxt = document.getElementById("zAxisTxt");	
 	zAxis.addEventListener("change", onMoveObject, false);
+
+	// flyAround = document.getElementById("flyAround");
+	// flyAround.addEventListener("change", onChangeFlyAround, false);
+
+	updateTextBoxValues();
 
 	function onListChange()
 	{ 
@@ -80,12 +97,26 @@
 		xAxis.value = pos.x;
 		yAxis.value = pos.y;
 		zAxis.value = pos.z;
+		updateTextBoxValues();
+	};
+
+	function updateTextBoxValues()
+	{ 
+		xAxisTxt.value = xAxis.value;
+		yAxisTxt.value = yAxis.value;
+		zAxisTxt.value = zAxis.value;
 	};
 
 	function onMoveObject()
 	{ 
 		w.moveObject(listObjects.value, xAxis.value, yAxis.value, zAxis.value);
+		updateTextBoxValues();
 	};
+
+	// function onChangeFlyAround()
+	// { 
+	// 	w.setAllowFly(flyAround.checked)
+	// };
 
 </script>
 </body>
