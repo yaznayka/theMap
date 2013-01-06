@@ -12,9 +12,10 @@ var Walker = function(settings)
 	this._ObjPath = settings.ObjPath;	
 	this._ListObjectsID = settings.ListObjectsID || null;
 	this._MapsSettings = settings.MapsSettings || [];	
+	this._AllowFly = settings.AllowFly || true;	
 	this._Maps = [];		
+	this._QueueAnimation = [];	
 	this._Speed = 10;
-	this._AllowFly = settings.AllowFly || true;
 	this._Factor = 10;
 	this._Rendered = false;
 	this._Container = null;
@@ -30,6 +31,7 @@ var Walker = function(settings)
 	this.Loader = null;
 	this.Controls = null;
 	this.House = null;
+	this.PointLight = null;
 	this.Clock = null;
 	delete settings;
 };
@@ -65,13 +67,15 @@ walProto.animate = function (delta)
 	if (this._AllowControls) 
 		this.Controls.update(delta);
 	else
-		this._littleWalk(delta);
+		this._doQueueAnimation(delta);
 
 	this.render();
 };
 
 walProto.render = function () 
 {
+	this.PointLight.position.copy( this.Camera.position );
+	// this.PointLight.lookAt( this.Controls ? .target )
 	this.Renderer.render( this.Scene, this.Camera );
 };
 
@@ -177,24 +181,6 @@ walProto.setAllowFly = function (value)
 	this._AllowFly = !!value;
 };
 
-walProto.loadPoints = function (points) 
-{
-	this._AllowFly = false;
-	this.Camera.position.set(0, 20, 0);
-	this.Camera.lookAt( this.Scene.position );
-	this._PointsToWalk = points;
-};
-
-walProto.walk = function () 
-{
-	if (!this._PointsToWalk.length)
-		return;
-
-	p = this._PointsToWalk.shift();
-	this.Camera.position.set(p.xC, 20, p.yC);
-	this.Camera.lookAt( this.Scene.position );
-};
-
 //-------------------Private Methods----------------------
 
 walProto._initMaps = function () 
@@ -210,32 +196,6 @@ walProto._initMaps = function ()
 	}
 
 	this._TLoadMap = setTimeout((function(self){ self._checkLoadMaps() })(this), 200);
-};
-
-walProto._flyAround = function () 
-{
-	this.Camera.position.set( Math.sin(this.Clock.getElapsedTime())*300, 100, Math.cos(this.Clock.getElapsedTime())*300 );
-	this.Camera.lookAt( this.Scene.position );
-};
-
-walProto._littleWalk = function(delta)
-{
-	if (!this._Rendered || !this._MapsLoaded)
-		return;
-
-	this._flyAround(delta);
-
-	// else
-	// {
-	// 	if (this._Delta > 1/this._Speed)
-	// 	{
-	// 		this.walk();
-	// 		this._Delta = 0;
-	// 	}
-	// 	else
-	// 		this._Delta += this.Clock.getDelta();
-	// }
-
 };
 
 walProto._checkLoadMaps = function()
@@ -259,6 +219,95 @@ walProto._checkLoadMaps = function()
 	}
 	else 
 		this._TLoadMap = setTimeout((function(self){ return function (){ self._checkLoadMaps()} })(this), 200);
+};
+
+walProto._flyAround = function (params) 
+{
+	if (!this._AllowFly) return;
+	params.Step = params.Step || 1;
+	this.Camera.position.set( Math.sin(params.Step)*300, 100, Math.cos(params.Step)*300 );
+	// this.Camera.position.set( Math.sin(this.Clock.getElapsedTime())*300, 100, Math.cos(this.Clock.getElapsedTime())*300 );
+	this.Camera.lookAt( this.Scene.position );
+	params.Step += 0.03;
+	setTimeout((function(params){ return function(){ params.IsEnded = true} })(params), 2000);
+};
+
+walProto._flyInRoom = function (params) 
+{
+	// setTimeout((function(params){ return function(){ params.IsEnded = true} })(params), 1000);
+};
+
+walProto._wrapCallback = function (callback, params) 
+{
+	params = params || {};
+	params.IsEnded = false
+	return { Callback: callback, Params: params };
+};
+
+walProto._createQueueAction = function () 
+{
+	var queue = this._QueueAnimation,
+		i, len1;
+	//первое действие - облет дома вокруг
+	queue.push( this._wrapCallback(this._flyAround) );
+	//затем поочередный облет каждой комнаты
+	for(i = 0, len1 = this._Maps.length; i < len1; i++)
+		queue.push( this._wrapCallback(this._flyInRoom) );
+};
+
+walProto._refreshQueue = function () 
+{
+	var queue = this._QueueAnimation,
+		isNeedRefresh = true,
+		i, len1;
+
+	for (i = 0, len1 = queue.length; i < len1; i++)
+	{
+		if (queue[i].Params.IsEnded) continue;
+		isNeedRefresh = false;
+		break;
+	}
+	if (isNeedRefresh)
+		for (i = 0, len1 = queue.length; i < len1; i++)
+			queue[i].Params.IsEnded = false;
+};
+
+walProto._giveNextQueueElem = function () 
+{
+	var queue = this._QueueAnimation,
+		i, len1;
+
+	for (i = 0, len1 = queue.length; i < len1; i++)
+		if (!queue[i].Params.IsEnded) 
+			return queue[i];
+};
+
+walProto._doQueueAnimation = function(delta)
+{
+	if (!this._Rendered || !this._MapsLoaded)
+		return;
+
+	var queue = this._QueueAnimation,
+		action;
+	//если очередь действий пуста, создадим её один раз
+	if (queue.length === 0)
+		this._createQueueAction();
+
+	this._refreshQueue();
+
+	action = this._giveNextQueueElem();
+	action.Params.Delta = delta;
+	action.Callback.call(this, action.Params);
+	// else
+	// {
+	// 	if (this._Delta > 1/this._Speed)
+	// 	{
+	// 		this.walk();
+	// 		this._Delta = 0;
+	// 	}
+	// 	else
+	// 		this._Delta += this.Clock.getDelta();
+	// }
 
 };
 
@@ -279,12 +328,13 @@ walProto._create3DContext = function()
 	this.Scene.add(this.Camera);
 
 	//!debugStart
-	var ambient = new THREE.AmbientLight(0x101030);
-	this.Scene.add(ambient);
-	var directionalLight = new THREE.DirectionalLight(0xffeedd);
-	directionalLight.position.set( 20, 10, 12 ).normalize();
+	var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+	directionalLight.position.set( 20, 50, 20 ).normalize();
 	this.Scene.add(directionalLight);
 	//!debugEnd
+
+	this.PointLight = new THREE.PointLight(0xffffff, 0.7);
+	this.Scene.add(this.PointLight);
 
 	if (this._ShowAxis)
 		this.showAxis();
