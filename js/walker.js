@@ -13,6 +13,7 @@ var Walker = function(settings)
 	this._ListObjectsID = settings.ListObjectsID || null;
 	this._MapsSettings = settings.MapsSettings || [];	
 	this._AllowFly = settings.AllowFly || true;	
+	this._SpeedAnimInRoom = 0.05;
 	this._Maps = [];		
 	this._QueueAnimation = [];	
 	this._Speed = 10;
@@ -66,8 +67,8 @@ walProto.animate = function (delta)
 
 	if (this._AllowControls) 
 		this.Controls.update(delta);
-	else
-		this._doQueueAnimation(delta);
+	// else
+	// 	this._doQueueAnimation(delta);
 
 	this.render();
 };
@@ -75,6 +76,8 @@ walProto.animate = function (delta)
 walProto.render = function () 
 {
 	this.PointLight.position.copy( this.Camera.position );
+	if (this.Camera.target)
+		this.PointLight.lookAt(this.Camera.target);
 	// this.PointLight.lookAt( this.Controls ? .target )
 	this.Renderer.render( this.Scene, this.Camera );
 };
@@ -185,13 +188,16 @@ walProto.setAllowFly = function (value)
 
 walProto._initMaps = function () 
 {
-	var map, ms, i, len1;
+	var id = 0,
+		map, ms, i, len1;
 
 	for (i = 0, len1 = this._MapsSettings.length; i < len1; i++)
 	{
 		ms = this._MapsSettings[i];
 		map = new Map(ms);
 		map.init();
+		map.setId(id++);
+		map.setLinking(ms.Linking)
 		this._Maps.push(map);
 	}
 
@@ -200,7 +206,7 @@ walProto._initMaps = function ()
 
 walProto._checkLoadMaps = function()
 {
-	var isLoaded = true,
+	var isLoaded = true, 
 		map, i, len1;
 
 	for (i = 0, len1 = this._Maps.length; i < len1; i++)
@@ -229,12 +235,153 @@ walProto._flyAround = function (params)
 	// this.Camera.position.set( Math.sin(this.Clock.getElapsedTime())*300, 100, Math.cos(this.Clock.getElapsedTime())*300 );
 	this.Camera.lookAt( this.Scene.position );
 	params.Step += 0.03;
-	setTimeout((function(params){ return function(){ params.IsEnded = true} })(params), 2000);
+	if (!params.Timer)
+		params.Timer = setTimeout((function(params){ return function(){ params.IsEnded = true; params.Timer = null;} })(params), 1000);
 };
 
-walProto._flyInRoom = function (params) 
+walProto._updateRooms = function (params) 
+{
+	var maps = this._Maps, 
+		sets, i, len1;
+
+	for (i = 0, len1 = maps.length; i < len1; i++)
+		if (!maps[i].getIsEnded()) 
+			return;
+
+	params.IsEnded = true;
+
+	for (i = 0, len1 = maps.length; i < len1; i++)
+	{
+		maps[i].setIsEnded(false);
+		sets = params.RoomsSettings[maps[i].getId()];
+		sets["iterator"] = 0;
+		sets["position"] = null;
+	}
+};
+
+walProto._getRoomSettings = function (params, room) 
+{
+	params.RoomsSettings = params.RoomsSettings || {};
+	params.RoomsSettings[room.getId()] = params.RoomsSettings[room.getId()] || {};
+	sets = params.RoomsSettings[room.getId()];
+
+	sets["points"] = sets["points"] || room.getPointsTo3DWalk();
+	sets["iterator"] = sets["iterator"] || 0;
+	return sets;
+};
+
+walProto._getNextRoom = function () 
+{
+	var maps = this._Maps, 
+		i, len1;
+
+	for (i = 0, len1 = maps.length; i < len1; i++)
+		if (!maps[i].getIsEnded()) 
+			return maps[i];
+
+	return maps[0];
+};
+
+walProto._getOffsetCoord = function (room, coord) 
+{
+	var geo = room.getGeometry(),
+		linking = room.getLinking(),
+		diffWidth = linking.width/geo.width,
+		diffHeight = linking.height/geo.height;
+
+	return (coord - geo.x) * diffWidth + linking.x;
+};
+
+walProto._setCamPositionRoom = function (room, sets) 
+{
+	var points = sets["points"],
+		iterator = sets["iterator"],
+		point = points[iterator],
+		nextPoint = points[iterator + 1],
+		y = room.getLinking().elevation,
+		freq = this._SpeedAnimInRoom,	
+		ofs = this._getOffsetCoord,
+		rotateFreq = freq,
+		position;
+	
+	sets["position"] = sets["position"] ||
+		new THREE.Vector3
+		( 
+			ofs(room, point.xC), 
+			y, 
+			ofs(room, point.yC)
+		);
+	position = sets["position"];
+
+	if (this.Camera.angle && Math.round(this.Camera.angle) !== Math.round(point.angle))
+	{
+		if (!sets["oldAngle"])
+			sets["oldAngle"] = Math.round(this.Camera.angle);
+		if (this.Camera.angle > point.angle)
+			this.Camera.angle = this.Camera.angle - 1 * rotateFreq * 4 ;
+		else
+			this.Camera.angle = this.Camera.angle + 1 * rotateFreq * 4;
+		// this.Camera.angle = this.Camera.angle - (sets["oldAngle"] - point.angle) * rotateFreq/10;
+		sets["isAngleChanged"] = true;
+	}
+	else
+	{
+		this.Camera.angle = point.angle;
+		sets["isAngleChanged"] = false;
+		sets["oldAngle"] = null;
+	}
+
+	if (nextPoint && !sets["isAngleChanged"])
+	{
+		position.x = position.x - (ofs(room, point.xC) - ofs(room, nextPoint.xC)) * freq;
+		position.z = position.z - (ofs(room, point.yC) - ofs(room, nextPoint.yC)) * freq;
+	} 
+
+	this.Camera.target = new THREE.Vector3
+		( 
+			position.x + 1 * Math.cos(this.Camera.angle * Math.PI / 180),
+			y, 
+			position.z - 1 * Math.sin(this.Camera.angle * Math.PI / 180)
+		);
+	this.Camera.lookAt( this.Camera.target );
+	// this.Camera.lookAt( this.Scene.position );
+	this.Camera.position.copy(position);
+};
+
+walProto._updateIterator = function (sets) 
+{
+	var speed = this._SpeedAnimInRoom;
+
+	if (sets["isAngleChanged"]) return
+
+	sets["freq"] = sets["freq"] || speed;
+	if (sets["freq"] >= 1)
+	{
+		sets["iterator"] += 1;
+		sets["freq"] = 0;
+	}
+	else
+		sets["freq"] += speed;
+};
+
+walProto._flyInRooms = function (params) 
 {
 	// setTimeout((function(params){ return function(){ params.IsEnded = true} })(params), 1000);
+	var room = this._getNextRoom(), 
+		sets, points, iterator;
+
+	sets = this._getRoomSettings(params, room);
+	points = sets["points"];
+	iterator = sets["iterator"];
+
+	if (points.length === iterator)
+		room.setIsEnded(true);
+	else
+		this._setCamPositionRoom(room, sets);
+
+	this._updateIterator(sets);
+
+	this._updateRooms(params);
 };
 
 walProto._wrapCallback = function (callback, params) 
@@ -248,28 +395,10 @@ walProto._createQueueAction = function ()
 {
 	var queue = this._QueueAnimation,
 		i, len1;
-	//первое действие - облет дома вокруг
+	//ГЇГҐГ°ГўГ®ГҐ Г¤ГҐГ©Г±ГІГўГЁГҐ - Г®ГЎГ«ГҐГІ Г¤Г®Г¬Г  ГўГ®ГЄГ°ГіГЈ
 	queue.push( this._wrapCallback(this._flyAround) );
-	//затем поочередный облет каждой комнаты
-	for(i = 0, len1 = this._Maps.length; i < len1; i++)
-		queue.push( this._wrapCallback(this._flyInRoom) );
-};
-
-walProto._refreshQueue = function () 
-{
-	var queue = this._QueueAnimation,
-		isNeedRefresh = true,
-		i, len1;
-
-	for (i = 0, len1 = queue.length; i < len1; i++)
-	{
-		if (queue[i].Params.IsEnded) continue;
-		isNeedRefresh = false;
-		break;
-	}
-	if (isNeedRefresh)
-		for (i = 0, len1 = queue.length; i < len1; i++)
-			queue[i].Params.IsEnded = false;
+	//Г§Г ГІГҐГ¬ ГЇГ®Г®Г·ГҐГ°ГҐГ¤Г­Г»Г© Г®ГЎГ«ГҐГІ ГЄГ Г¦Г¤Г®Г© ГЄГ®Г¬Г­Г ГІГ»
+	queue.push( this._wrapCallback(this._flyInRooms) );
 };
 
 walProto._giveNextQueueElem = function () 
@@ -280,6 +409,12 @@ walProto._giveNextQueueElem = function ()
 	for (i = 0, len1 = queue.length; i < len1; i++)
 		if (!queue[i].Params.IsEnded) 
 			return queue[i];
+
+	//ГЁГ­Г Г·ГҐ Г±ГЎГ°Г Г±Г»ГўГ ГҐГ¬ Г±ГІГ ГІГіГ± Г§Г ГЄГ®Г­Г·ГҐГ­Г­Г®Г±ГІГЁ ГўГ±ГҐГ¬ 
+	for (i = 0, len1 = queue.length; i < len1; i++)
+		queue[i].Params.IsEnded = false;
+
+	return queue[0];
 };
 
 walProto._doQueueAnimation = function(delta)
@@ -289,26 +424,16 @@ walProto._doQueueAnimation = function(delta)
 
 	var queue = this._QueueAnimation,
 		action;
-	//если очередь действий пуста, создадим её один раз
+	//ГҐГ±Г«ГЁ Г®Г·ГҐГ°ГҐГ¤Гј Г¤ГҐГ©Г±ГІГўГЁГ© ГЇГіГ±ГІГ , Г±Г®Г§Г¤Г Г¤ГЁГ¬ ГҐВё Г®Г¤ГЁГ­ Г°Г Г§
 	if (queue.length === 0)
 		this._createQueueAction();
 
-	this._refreshQueue();
-
 	action = this._giveNextQueueElem();
-	action.Params.Delta = delta;
-	action.Callback.call(this, action.Params);
-	// else
-	// {
-	// 	if (this._Delta > 1/this._Speed)
-	// 	{
-	// 		this.walk();
-	// 		this._Delta = 0;
-	// 	}
-	// 	else
-	// 		this._Delta += this.Clock.getDelta();
-	// }
-
+	if (action)
+	{
+		action.Params.Delta = delta;
+		action.Callback.call(this, action.Params);
+	}
 };
 
 walProto._create3DContext = function()
@@ -328,12 +453,12 @@ walProto._create3DContext = function()
 	this.Scene.add(this.Camera);
 
 	//!debugStart
-	var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-	directionalLight.position.set( 20, 50, 20 ).normalize();
-	this.Scene.add(directionalLight);
+	// var directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+	// directionalLight.position.set( 20, 50, 20 ).normalize();
+	// this.Scene.add(directionalLight);
 	//!debugEnd
 
-	this.PointLight = new THREE.PointLight(0xffffff, 0.7);
+	this.PointLight = new THREE.PointLight(0xffffff, 0.6);
 	this.Scene.add(this.PointLight);
 
 	if (this._ShowAxis)

@@ -5,6 +5,7 @@
 	this._RoomObj = null,
 	this._StepSize = null,
 	this._StartCell = null,
+	this._Linking = null,		
 	this._Route = [],
 	this._RoomPoints = [],
 	this._WayPoints = [],
@@ -25,6 +26,8 @@
 	this._IsRoundedAngle = false;	
 	this._Geometry = null;
 	this._Loaded = false;
+	this._IsEnded = false;
+	this._Id = 0;
 };
 
 var mapProto = Map.prototype;
@@ -719,3 +722,33 @@ mapProto.getGeometry = function()
 	//возвращаем координаты левого верхнего угла, выосту и ширину
 	return { x: geo.left, y: geo.top, width: geo.width, height: geo.height };
 }
+
+mapProto.setIsEnded = function(value) 
+{
+	this._IsEnded = !!value;
+};
+
+mapProto.getIsEnded = function() 
+{
+	return this._IsEnded;
+};
+
+mapProto.setId = function(value) 
+{
+	this._Id = value;
+};
+
+mapProto.getId = function() 
+{
+	return this._Id;
+};
+
+mapProto.setLinking = function(value) 
+{
+	this._Linking = value;
+};
+
+mapProto.getLinking = function() 
+{
+	return this._Linking;
+};
