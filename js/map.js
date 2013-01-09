@@ -18,7 +18,7 @@
 	this._Door = { beginCoord: {}, endCoord: {} },
 	this._Debug = true,
 	this._DistanceFromWall = 0,
-	this._DistanseLooking = 1,
+	this._DistanseLooking = 5,
 	this._ProcentPathFreq = 5,
 	this._IdRoom = "room",
 	this._IsShowLooking = true,
